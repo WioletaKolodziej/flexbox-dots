@@ -8,7 +8,7 @@ export default function TextArea({ value, onChange }: TextAreaProps) {
   return (
     <textarea
       className="w-full h-32 border p-2 font-mono"
-      placeholder="np. flex-direction: column;"
+      placeholder="e.g. flex-direction: column;"
       value={value}
       onChange={(e) => onChange(e.target.value)}
     />
