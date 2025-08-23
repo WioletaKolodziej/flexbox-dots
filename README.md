@@ -3,10 +3,10 @@ This project is inspired by existing games for practising Flexbox and serves as 
 
 🔧 Built With
 
-React – component-based UI
-TypeScript – type safety and maintainability
-Tailwind CSS – utility-first styling
-Vite – fast and modern development environment
+React,
+TypeScript,
+Tailwind CSS,
+Vite 
 
 🚀 Deployment
 
