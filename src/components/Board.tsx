@@ -12,7 +12,7 @@ export default function Board({ style, dotQty = 3, initialStyle }: BoardProps) {
 
   return (
     <div
-      className="flex-1 border p-4 h-64 flex bg-gray-50"
+      className="flex-1 border p-4 h-64 w-64 flex bg-gray-50"
       style={combinedStyle}
     >
       {[...Array(dotQty)].map((_, i) => (
