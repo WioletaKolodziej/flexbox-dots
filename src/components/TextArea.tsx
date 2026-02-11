@@ -1,9 +1,10 @@
 type TextAreaProps = {
   value: string;
   onChange: (val: string) => void;
+  placeholder: string;
 };
 
-export default function TextArea({ value, onChange }: TextAreaProps) {
+export default function TextArea({ value, onChange, placeholder }: TextAreaProps) {
   return (
     <label className="editor" htmlFor="css-editor">
       <div className="editor__top">
@@ -15,7 +16,7 @@ export default function TextArea({ value, onChange }: TextAreaProps) {
       <textarea
         id="css-editor"
         className="editor__textarea"
-        placeholder={"np.\njustify-content: center;\nalign-items: center;"}
+        placeholder={placeholder}
         value={value}
         onChange={(event) => onChange(event.target.value)}
         spellCheck={false}

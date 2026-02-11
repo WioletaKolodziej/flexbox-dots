@@ -1,9 +1,10 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Board from "./Board";
 import TextArea from "./TextArea";
 import InfoField from "./InfoField";
 import { levels } from "./levels";
 import type { CSSProperties } from "react";
+import { difficultyLabels, languageOptions, uiText, type Language } from "../i18n";
 
 type StyleMap = Record<string, string>;
 
@@ -42,11 +43,47 @@ function normalize(value: string | number | undefined): string {
     .toLowerCase();
 }
 
+function detectBrowserLanguage(): Language {
+  if (typeof navigator === "undefined") {
+    return "pl";
+  }
+
+  const candidates = [navigator.language, ...(navigator.languages ?? [])]
+    .map((entry) => entry.toLowerCase());
+
+  if (candidates.some((entry) => entry.startsWith("de"))) {
+    return "de";
+  }
+
+  if (candidates.some((entry) => entry.startsWith("en"))) {
+    return "en";
+  }
+
+  return "pl";
+}
+
 export default function FlexBoxGame() {
   const [cssInput, setCssInput] = useState("");
   const [levelIndex, setLevelIndex] = useState(0);
   const [status, setStatus] = useState<"idle" | "success" | "error">("idle");
+  const [language, setLanguage] = useState<Language>(() => {
+    if (typeof window === "undefined") {
+      return "pl";
+    }
 
+    const stored = window.localStorage.getItem("flexbox-dots-lang");
+    if (stored === "pl" || stored === "en" || stored === "de") {
+      return stored;
+    }
+
+    return detectBrowserLanguage();
+  });
+
+  useEffect(() => {
+    window.localStorage.setItem("flexbox-dots-lang", language);
+  }, [language]);
+
+  const t = uiText[language];
   const currentLevel = levels[levelIndex];
 
   const parsedStyle = useMemo(() => cssToReactStyle(cssInput), [cssInput]);
@@ -70,9 +107,9 @@ export default function FlexBoxGame() {
   );
 
   const progress = Math.round(((levelIndex + 1) / levels.length) * 100);
-  const easyCount = levels.filter((level) => level.difficulty === "Latwy").length;
-  const mediumCount = levels.filter((level) => level.difficulty === "Sredni").length;
-  const hardCount = levels.filter((level) => level.difficulty === "Trudny").length;
+  const easyCount = levels.filter((level) => level.difficulty === "easy").length;
+  const mediumCount = levels.filter((level) => level.difficulty === "medium").length;
+  const hardCount = levels.filter((level) => level.difficulty === "hard").length;
 
   const checkSolution = () => {
     const solved = Object.entries(currentLevel.goal).every(([prop, value]) => {
@@ -118,25 +155,46 @@ export default function FlexBoxGame() {
     setCssInput((prev) => (prev.trim().length === 0 ? snippet : `${prev}\n${snippet}`));
   };
 
+  const statusText = {
+    idle: t.statusIdle,
+    error: t.statusError,
+    success: t.statusSuccess,
+  }[status];
+
   return (
     <div className="game-shell">
+      <div className="language-switch">
+        <label htmlFor="language-select">{t.language}</label>
+        <select id="language-select" value={language} onChange={(event) => setLanguage(event.target.value as Language)}>
+          {languageOptions.map((option) => (
+            <option key={option.code} value={option.code}>
+              {option.label}
+            </option>
+          ))}
+        </select>
+      </div>
+
       <header className="hero">
         <div>
-          <p className="hero__tag">Flexbox Dots Game</p>
-          <h1>Playground Flexbox</h1>
-          <p className="hero__subtitle">Układaj kolorowe kropki wpisując CSS i przechodź kolejne scenariusze.</p>
-          <p className="hero__edu">Aplikacja w celach edukacyjnych CSS.</p>
+          <p className="hero__tag">{t.gameTag}</p>
+          <h1>{t.gameTitle}</h1>
+          <p className="hero__subtitle">{t.subtitle}</p>
+          <p className="hero__edu">{t.edu}</p>
         </div>
-        <div className="progress-card" aria-label="Postep gry">
-          <p>Poziom {currentLevel.id}</p>
-          <strong>{currentLevel.title}</strong>
-          <span>Trudnosc: {currentLevel.difficulty}</span>
+        <div className="progress-card" aria-label="Game progress">
+          <p>
+            {t.level} {currentLevel.id}
+          </p>
+          <strong>{currentLevel.title[language]}</strong>
+          <span>
+            {t.difficulty}: {difficultyLabels[language][currentLevel.difficulty]}
+          </span>
           <div className="progress-track" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={progress}>
             <div className="progress-fill" style={{ width: `${progress}%` }} />
           </div>
           <span>{progress}%</span>
           <p className="progress-meta">
-            Poziomy: {levels.length} | Trudnosci: 3 ({easyCount}/{mediumCount}/{hardCount})
+            {t.levels}: {levels.length} | {t.difficulties}: 3 ({easyCount}/{mediumCount}/{hardCount})
           </p>
         </div>
       </header>
@@ -144,24 +202,34 @@ export default function FlexBoxGame() {
       <main className="game-grid">
         <section className="challenge-card">
           <div className="challenge-card__header">
-            <h2>Wyzwanie</h2>
+            <h2>{t.challenge}</h2>
             <div className="challenge-nav">
-              <button onClick={goToPrev} type="button">Poprzedni</button>
-              <button onClick={goToNext} type="button">Nastepny</button>
+              <button onClick={goToPrev} type="button">
+                {t.previous}
+              </button>
+              <button onClick={goToNext} type="button">
+                {t.next}
+              </button>
             </div>
           </div>
-          <p className="challenge-card__task">{currentLevel.task}</p>
-          <p className="challenge-card__hint">Hint: {currentLevel.hint}</p>
+          <p className="challenge-card__task">{currentLevel.task[language]}</p>
+          <p className="challenge-card__hint">
+            {t.hint}: {currentLevel.hint[language]}
+          </p>
 
           <div className="boards-layout">
-            <Board title="Twoj wynik" style={liveStyle} dotQty={currentLevel.dotQty} accent="live" />
-            <Board title="Cel rundy" style={targetStyle} dotQty={currentLevel.dotQty} accent="target" />
+            <Board title={t.yourResult} style={liveStyle} dotQty={currentLevel.dotQty} accent="live" />
+            <Board title={t.targetRound} style={targetStyle} dotQty={currentLevel.dotQty} accent="target" />
           </div>
         </section>
 
         <section className="editor-card">
-          <h2>Wpisz CSS</h2>
-          <TextArea value={cssInput} onChange={setCssInput} />
+          <h2>{t.enterCss}</h2>
+          <TextArea
+            value={cssInput}
+            onChange={setCssInput}
+            placeholder={t.cssPlaceholder}
+          />
 
           <div className="snippet-row">
             {snippets.map((snippet) => (
@@ -173,24 +241,20 @@ export default function FlexBoxGame() {
 
           <div className="actions">
             <button type="button" className="btn btn--ghost" onClick={resetLevel}>
-              Reset
+              {t.reset}
             </button>
             <button type="button" className="btn btn--primary" onClick={checkSolution}>
-              Sprawdz
+              {t.check}
             </button>
           </div>
 
-          <p className={`status status--${status}`}>
-            {status === "idle" && "Wpisz style i sprawdz rezultat."}
-            {status === "error" && "Jeszcze nie to. Porownaj z podgladem celu."}
-            {status === "success" && "Perfekcyjnie! Za chwile kolejny poziom."}
-          </p>
+          <p className={`status status--${status}`}>{statusText}</p>
         </section>
 
-        <InfoField />
+        <InfoField language={language} />
       </main>
 
-      <footer className="app-footer">© 2026 UI-kolo. Wszelkie prawa zastrzeżone.</footer>
+      <footer className="app-footer">{t.footer}</footer>
     </div>
   );
 }
