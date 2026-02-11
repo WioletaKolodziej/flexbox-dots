@@ -1,203 +1,196 @@
-import { useState, useEffect } from "react";
+import { useMemo, useState } from "react";
 import Board from "./Board";
 import TextArea from "./TextArea";
 import InfoField from "./InfoField";
 import { levels } from "./levels";
+import type { CSSProperties } from "react";
+
+type StyleMap = Record<string, string>;
+
+const snippets = [
+  "flex-direction: column;",
+  "justify-content: center;",
+  "justify-content: space-between;",
+  "align-items: center;",
+  "align-items: flex-end;",
+  "gap: 20px;",
+];
+
+function cssToReactStyle(css: string): StyleMap {
+  const style: StyleMap = {};
+
+  css.split(";").forEach((rule) => {
+    const [rawProp, rawValue] = rule.split(":");
+    const prop = rawProp?.trim();
+    const value = rawValue?.trim();
+
+    if (!prop || !value) {
+      return;
+    }
+
+    const camelProp = prop.replace(/-([a-z])/g, (_, letter: string) => letter.toUpperCase());
+    style[camelProp] = value;
+  });
+
+  return style;
+}
+
+function normalize(value: string | number | undefined): string {
+  return String(value ?? "")
+    .trim()
+    .replace(/\s+/g, " ")
+    .toLowerCase();
+}
 
 export default function FlexBoxGame() {
   const [cssInput, setCssInput] = useState("");
-  const [appliedStyle, setAppliedStyle] = useState({});
-  const [level, setLevel] = useState(0);
-  const [infoExpanded, setInfoExpanded] = useState(false);
+  const [levelIndex, setLevelIndex] = useState(0);
+  const [status, setStatus] = useState<"idle" | "success" | "error">("idle");
 
-  const currentLevel = levels[level];
+  const currentLevel = levels[levelIndex];
 
-  useEffect(() => {
-    setAppliedStyle(currentLevel.initialStyle || {});
-    setCssInput("");
-  }, [level]);
+  const parsedStyle = useMemo(() => cssToReactStyle(cssInput), [cssInput]);
 
-  useEffect(() => {
-    setAppliedStyle((prev) => ({
-      ...prev,
-      ...cssToReactStyle(cssInput),
-    }));
-  }, [cssInput]);
+  const liveStyle = useMemo<CSSProperties>(
+    () => ({
+      display: "flex",
+      ...currentLevel.initialStyle,
+      ...parsedStyle,
+    }),
+    [currentLevel, parsedStyle]
+  );
 
-  function cssToReactStyle(css: string): Record<string, string> {
-    const style: Record<string, string> = {};
-    css.split(";").forEach((rule) => {
-      if (!rule.trim()) return;
-      const [prop, value] = rule.split(":").map((s) => s?.trim());
-      if (!prop || !value) return;
-      const camelProp = prop.replace(/-([a-z])/g, (_, letter) =>
-        letter.toUpperCase()
-      );
-      style[camelProp] = value;
-    });
-    return style;
-  }
+  const targetStyle = useMemo<CSSProperties>(
+    () => ({
+      display: "flex",
+      ...currentLevel.initialStyle,
+      ...currentLevel.goal,
+    }),
+    [currentLevel]
+  );
+
+  const progress = Math.round(((levelIndex + 1) / levels.length) * 100);
+  const easyCount = levels.filter((level) => level.difficulty === "Latwy").length;
+  const mediumCount = levels.filter((level) => level.difficulty === "Sredni").length;
+  const hardCount = levels.filter((level) => level.difficulty === "Trudny").length;
 
   const checkSolution = () => {
-    const style = cssToReactStyle(cssInput);
-    const goal = currentLevel.goal;
-    const success = Object.entries(goal).every(
-      ([prop, val]) => style[prop] === val
-    );
-    alert(success ? "✅ Success!" : "❌ Try again");
-    if (success) {
-      if (level < levels.length - 1) {
-        setLevel(level + 1);
+    const solved = Object.entries(currentLevel.goal).every(([prop, value]) => {
+      const actualValue = parsedStyle[prop] ?? currentLevel.initialStyle[prop as keyof typeof currentLevel.initialStyle];
+      return normalize(actualValue) === normalize(value);
+    });
+
+    if (!solved) {
+      setStatus("error");
+      return;
+    }
+
+    setStatus("success");
+    window.setTimeout(() => {
+      if (levelIndex === levels.length - 1) {
+        setLevelIndex(0);
       } else {
-        alert("🎉 Congratulation!");
-        setLevel(0);
+        setLevelIndex((prev) => prev + 1);
       }
       setCssInput("");
-    }
+      setStatus("idle");
+    }, 900);
   };
 
-  // Set fixed width for sidebar when expanded, and fixed width for collapsed tab
-  const sidebarExpandedWidth = 280; // in pixels, approx w-72 Tailwind
-  const sidebarCollapsedWidth = 40; // enough for tab with text rotated
+  const resetLevel = () => {
+    setCssInput("");
+    setStatus("idle");
+  };
+
+  const goToPrev = () => {
+    setLevelIndex((prev) => (prev === 0 ? levels.length - 1 : prev - 1));
+    setCssInput("");
+    setStatus("idle");
+  };
+
+  const goToNext = () => {
+    setLevelIndex((prev) => (prev === levels.length - 1 ? 0 : prev + 1));
+    setCssInput("");
+    setStatus("idle");
+  };
+
+  const addSnippet = (snippet: string) => {
+    setCssInput((prev) => (prev.trim().length === 0 ? snippet : `${prev}\n${snippet}`));
+  };
 
   return (
-    <div>
-      <h1 className="p-10 font-bold">Flexbox-dots</h1>
-      <div className="flex">
-        {/* Sidebar container - fixed width and full height, background slightly darker */}
-        <div
-          style={{
-            width: infoExpanded ? sidebarExpandedWidth : sidebarCollapsedWidth,
-            transition: "width 0.3s ease",
-            height: "calc(100vh - 80px)", // leave space for header padding
-            position: "fixed",
-            top: 80,
-            left: 0,
-            backgroundColor: "rgba(255, 255, 255, 0.1)",
-            backdropFilter: "blur(12px)",
-            WebkitBackdropFilter: "blur(12px)",
-            border: "1px solid rgba(255, 255, 255, 0.2)",
-            boxShadow: "0 8px 32px 0 rgba(31, 38, 135, 0.37)",
-            color: "#f1f5f9",
-            overflow: "hidden",
-            display: "flex",
-            flexDirection: "column",
-            zIndex: 1000,
-          }}
-          aria-label="Cheat Sheet sidebar"
-        >
-          {/* Collapsed tab with vertical text and arrow */}
-          {!infoExpanded && (
-            <button
-              aria-label="Expand Cheat Sheet"
-              title="Expand Cheat Sheet"
-              onClick={() => setInfoExpanded(true)}
-              style={{
-                writingMode: "vertical-rl",
-                transform: "rotate(180deg)",
-                backgroundColor: "rgba(255, 255, 255, 0.15)",
-                color: "#f1f5f9",
-                fontWeight: "bold",
-                padding: "0.5rem",
-                borderTopRightRadius: "8px",
-                borderBottomRightRadius: "8px",
-                cursor: "pointer",
-                height: "100%",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                userSelect: "none",
-                boxShadow: "0 4px 10px rgba(0,0,0,0.1)",
-                transition: "background-color 0.3s ease",
-              }}
-              onMouseEnter={(e) =>
-                (e.currentTarget.style.backgroundColor =
-                  "rgba(255, 255, 255, 0.25)")
-              }
-              onMouseLeave={(e) =>
-                (e.currentTarget.style.backgroundColor =
-                  "rgba(255, 255, 255, 0.15)")
-              }
-            >
-              Cheat Sheet&nbsp;
-              <span aria-hidden="true" style={{ fontSize: "1.2rem" }}></span>
-            </button>
-          )}
-          {/* Expanded sidebar content */}
-          {infoExpanded && (
-            <>
-              {/* Close button top-right */}
-              <button
-                onClick={() => setInfoExpanded(false)}
-                aria-label="Collapse Cheat Sheet"
-                title="Collapse Cheat Sheet"
-                style={{
-                  alignSelf: "flex-end",
-                  background: "transparent",
-                  border: "none",
-                  color: "#f1f5f9",
-                  fontSize: "1.8rem",
-                  fontWeight: "bold",
-                  cursor: "pointer",
-                  padding: "0.5rem 1rem",
-                  userSelect: "none",
-                  transition: "color 0.2s ease",
-                }}
-                onMouseEnter={(e) => (e.currentTarget.style.color = "#e0e7ff")}
-                onMouseLeave={(e) => (e.currentTarget.style.color = "#f1f5f9")}
-              >
-                &times;
-              </button>
-              {/* The actual InfoField content scrollable */}
-              <div
-                style={{
-                  overflowY: "auto",
-                  padding: "0 1rem 1rem 1rem",
-                  flex: 1,
-                }}
-              >
-                <InfoField />
-              </div>
-            </>
-          )}
+    <div className="game-shell">
+      <header className="hero">
+        <div>
+          <p className="hero__tag">Flexbox Dots Game</p>
+          <h1>Playground Flexbox</h1>
+          <p className="hero__subtitle">Układaj kolorowe kropki wpisując CSS i przechodź kolejne scenariusze.</p>
+          <p className="hero__edu">Aplikacja w celach edukacyjnych CSS.</p>
         </div>
+        <div className="progress-card" aria-label="Postep gry">
+          <p>Poziom {currentLevel.id}</p>
+          <strong>{currentLevel.title}</strong>
+          <span>Trudnosc: {currentLevel.difficulty}</span>
+          <div className="progress-track" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={progress}>
+            <div className="progress-fill" style={{ width: `${progress}%` }} />
+          </div>
+          <span>{progress}%</span>
+          <p className="progress-meta">
+            Poziomy: {levels.length} | Trudnosci: 3 ({easyCount}/{mediumCount}/{hardCount})
+          </p>
+        </div>
+      </header>
 
-        {/* Main content area shifted by sidebar width */}
-        <main
-          style={{
-            marginLeft: infoExpanded
-              ? sidebarExpandedWidth
-              : sidebarCollapsedWidth,
-            padding: "1rem",
-            transition: "margin-left 0.3s ease",
-            width: `calc(100% - ${
-              infoExpanded ? sidebarExpandedWidth : sidebarCollapsedWidth
-            }px)`,
-          }}
-        >
-          <h2 className="text-2xl font-bold uppercase">
-            Level {currentLevel.id}
-          </h2>
-          <br />
-          <p>{currentLevel.task}</p>
-          <div className="flex gap-4 p-4">
-            <Board
-              style={{ display: "flex", ...appliedStyle }}
-              dotQty={currentLevel.dotQty}
-              initialStyle={currentLevel.initialStyle}
-            />
-            <div className="flex-1">
-              <TextArea value={cssInput} onChange={setCssInput} />
-              <button
-                onClick={checkSolution}
-                className="mt-2 bg-green-600 text-white px-4 py-2 rounded focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-green-500"
-              >
-                Confirm
-              </button>
+      <main className="game-grid">
+        <section className="challenge-card">
+          <div className="challenge-card__header">
+            <h2>Wyzwanie</h2>
+            <div className="challenge-nav">
+              <button onClick={goToPrev} type="button">Poprzedni</button>
+              <button onClick={goToNext} type="button">Nastepny</button>
             </div>
           </div>
-        </main>
-      </div>
+          <p className="challenge-card__task">{currentLevel.task}</p>
+          <p className="challenge-card__hint">Hint: {currentLevel.hint}</p>
+
+          <div className="boards-layout">
+            <Board title="Twoj wynik" style={liveStyle} dotQty={currentLevel.dotQty} accent="live" />
+            <Board title="Cel rundy" style={targetStyle} dotQty={currentLevel.dotQty} accent="target" />
+          </div>
+        </section>
+
+        <section className="editor-card">
+          <h2>Wpisz CSS</h2>
+          <TextArea value={cssInput} onChange={setCssInput} />
+
+          <div className="snippet-row">
+            {snippets.map((snippet) => (
+              <button key={snippet} type="button" onClick={() => addSnippet(snippet)}>
+                {snippet}
+              </button>
+            ))}
+          </div>
+
+          <div className="actions">
+            <button type="button" className="btn btn--ghost" onClick={resetLevel}>
+              Reset
+            </button>
+            <button type="button" className="btn btn--primary" onClick={checkSolution}>
+              Sprawdz
+            </button>
+          </div>
+
+          <p className={`status status--${status}`}>
+            {status === "idle" && "Wpisz style i sprawdz rezultat."}
+            {status === "error" && "Jeszcze nie to. Porownaj z podgladem celu."}
+            {status === "success" && "Perfekcyjnie! Za chwile kolejny poziom."}
+          </p>
+        </section>
+
+        <InfoField />
+      </main>
+
+      <footer className="app-footer">© 2026 UI-kolo. Wszelkie prawa zastrzeżone.</footer>
     </div>
   );
 }

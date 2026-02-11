@@ -1,4 +1,3 @@
-
 type TextAreaProps = {
   value: string;
   onChange: (val: string) => void;
@@ -6,11 +5,21 @@ type TextAreaProps = {
 
 export default function TextArea({ value, onChange }: TextAreaProps) {
   return (
-    <textarea
-      className="w-full h-32 w-64 border p-2 font-mono"
-      placeholder="e.g. flex-direction: column;"
-      value={value}
-      onChange={(e) => onChange(e.target.value)}
-    />
+    <label className="editor" htmlFor="css-editor">
+      <div className="editor__top">
+        <span className="editor__dot editor__dot--red" />
+        <span className="editor__dot editor__dot--yellow" />
+        <span className="editor__dot editor__dot--green" />
+        <p>flexbox.css</p>
+      </div>
+      <textarea
+        id="css-editor"
+        className="editor__textarea"
+        placeholder={"np.\njustify-content: center;\nalign-items: center;"}
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+        spellCheck={false}
+      />
+    </label>
   );
 }
