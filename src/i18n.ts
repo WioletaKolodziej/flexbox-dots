@@ -64,7 +64,7 @@ export const uiText: Record<Language, {
     statusError: "Jeszcze chwila. Porównaj układ z podglądem celu i spróbuj ponownie.",
     statusSuccess: "Świetnie! Przechodzisz do kolejnego poziomu.",
     cheatsheet: "Ściąga Flexbox",
-    footer: "© 2026 UI-kolo. Wszelkie prawa zastrzeżone.",
+    footer: "© 2026 accesswebstudio. Wszelkie prawa zastrzeżone.",
   },
   en: {
     gameTag: "Flexbox Dots Game",
