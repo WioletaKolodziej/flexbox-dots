@@ -64,7 +64,7 @@ export const uiText: Record<Language, {
     statusError: "Jeszcze chwila. Porównaj układ z podglądem celu i spróbuj ponownie.",
     statusSuccess: "Świetnie! Przechodzisz do kolejnego poziomu.",
     cheatsheet: "Ściąga Flexbox",
-    footer: "© 2026 UI-kolo. Wszelkie prawa zastrzeżone.",
+    footer: "© 2026 accesswebstudio. Wszelkie prawa zastrzeżone.",
   },
   en: {
     gameTag: "Flexbox Dots Game",
@@ -90,7 +90,7 @@ export const uiText: Record<Language, {
     statusError: "Almost there. Compare your layout with the target and try again.",
     statusSuccess: "Great job! Loading the next level.",
     cheatsheet: "Flexbox Cheatsheet",
-    footer: "© 2026 UI-kolo. All rights reserved.",
+    footer: "© 2026 accesswebstudio. All rights reserved.",
   },
   de: {
     gameTag: "Flexbox Dots Game",
@@ -116,7 +116,7 @@ export const uiText: Record<Language, {
     statusError: "Fast geschafft. Vergleiche dein Layout mit dem Ziel und versuche es erneut.",
     statusSuccess: "Stark! Das nächste Level wird geladen.",
     cheatsheet: "Flexbox-Spickzettel",
-    footer: "© 2026 UI-kolo. Alle Rechte vorbehalten.",
+    footer: "© 2026 accesswebstudio. Alle Rechte vorbehalten.",
   },
 };
 
